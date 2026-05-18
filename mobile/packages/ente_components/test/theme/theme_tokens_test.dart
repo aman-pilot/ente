@@ -45,11 +45,11 @@ void main() {
     });
 
     test("selects app primary tokens without changing shared colors", () {
-      final photosLight = ColorTokens.forApp(EnteApp.photos);
-      final authLight = ColorTokens.forApp(EnteApp.auth);
-      final lockerLight = ColorTokens.forApp(EnteApp.locker);
+      final photosLight = ColorTokens.forApp(ComponentApp.photos);
+      final authLight = ColorTokens.forApp(ComponentApp.auth);
+      final lockerLight = ColorTokens.forApp(ComponentApp.locker);
       final authDark = ColorTokens.forApp(
-        EnteApp.auth,
+        ComponentApp.auth,
         brightness: Brightness.dark,
       );
 
@@ -285,8 +285,8 @@ void main() {
     });
 
     test("maps selected app primary tokens into ThemeData", () {
-      final authTheme = ComponentTheme.lightTheme(app: EnteApp.auth);
-      final lockerTheme = ComponentTheme.darkTheme(app: EnteApp.locker);
+      final authTheme = ComponentTheme.lightTheme(app: ComponentApp.auth);
+      final lockerTheme = ComponentTheme.darkTheme(app: ComponentApp.locker);
 
       expect(authTheme.colorScheme.primary, purpleDefaultLight);
       expect(
@@ -344,7 +344,7 @@ void main() {
 
       await tester.pumpWidget(
         Theme(
-          data: ComponentTheme.lightTheme(app: EnteApp.auth),
+          data: ComponentTheme.lightTheme(app: ComponentApp.auth),
           child: Builder(
             builder: (context) {
               authColors = context.componentColors;
@@ -356,7 +356,7 @@ void main() {
 
       await tester.pumpWidget(
         Theme(
-          data: ComponentTheme.darkTheme(app: EnteApp.locker),
+          data: ComponentTheme.darkTheme(app: ComponentApp.locker),
           child: Builder(
             builder: (context) {
               lockerColors = context.componentColors;
@@ -365,6 +365,46 @@ void main() {
           ),
         ),
       );
+
+      expect(authColors.primary, purpleDefaultLight);
+      expect(authColors.backgroundBase, ColorTokens.light.backgroundBase);
+      expect(lockerColors.primary, blueDefaultDark);
+      expect(lockerColors.backgroundBase, ColorTokens.dark.backgroundBase);
+    });
+
+    testWidgets("configure selects app-aware tokens without theme extensions", (
+      tester,
+    ) async {
+      late ColorTokens authColors;
+      late ColorTokens lockerColors;
+
+      ComponentTheme.configure(app: ComponentApp.auth);
+      await tester.pumpWidget(
+        Theme(
+          data: ThemeData.light(),
+          child: Builder(
+            builder: (context) {
+              authColors = context.componentColors;
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+
+      ComponentTheme.configure(app: ComponentApp.locker);
+      await tester.pumpWidget(
+        Theme(
+          data: ThemeData.dark(),
+          child: Builder(
+            builder: (context) {
+              lockerColors = context.componentColors;
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+
+      ComponentTheme.configure(app: ComponentApp.photos);
 
       expect(authColors.primary, purpleDefaultLight);
       expect(authColors.backgroundBase, ColorTokens.light.backgroundBase);

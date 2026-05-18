@@ -1,7 +1,6 @@
+import "package:ente_components/ente_components.dart";
 import "package:ente_sharing/verify_identity_dialog.dart";
 import "package:ente_strings/ente_strings.dart";
-import "package:ente_ui/theme/colors.dart";
-import "package:ente_ui/theme/ente_theme.dart";
 import "package:flutter/material.dart";
 import "package:locker/services/configuration.dart";
 import "package:locker/ui/components/legacy_collections_trash_widget.dart";
@@ -21,19 +20,18 @@ class DrawerPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final enteColorScheme = getEnteColorScheme(context);
+    final colors = context.componentColors;
     return Scaffold(
-      backgroundColor: enteColorScheme.backgroundBase,
+      backgroundColor: colors.backgroundBase,
       body: Container(
-        color: enteColorScheme.backgroundBase,
-        child: _getBody(context, enteColorScheme),
+        color: colors.backgroundBase,
+        child: _getBody(context, colors),
       ),
     );
   }
 
-  Widget _getBody(BuildContext context, EnteColorScheme colorScheme) {
+  Widget _getBody(BuildContext context, ColorTokens colors) {
     final hasLoggedIn = Configuration.instance.hasConfiguredAccount();
-    final enteTextTheme = getEnteTextTheme(context);
     const sectionSpacing = SizedBox(height: 8);
     final List<Widget> contents = [];
 
@@ -62,8 +60,8 @@ class DrawerPage extends StatelessWidget {
                 builder: (BuildContext context, Widget? child) {
                   return Text(
                     emailNotifier.value!,
-                    style: enteTextTheme.body.copyWith(
-                      color: colorScheme.textMuted,
+                    style: TextStyles.body.copyWith(
+                      color: colors.textLight,
                       overflow: TextOverflow.ellipsis,
                     ),
                   );

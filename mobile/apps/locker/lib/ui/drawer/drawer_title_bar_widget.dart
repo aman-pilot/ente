@@ -1,4 +1,4 @@
-import "package:ente_ui/theme/ente_theme.dart";
+import "package:ente_components/ente_components.dart";
 import "package:flutter/material.dart";
 import "package:hugeicons/hugeicons.dart";
 import "package:locker/ui/settings/pages/settings_search_page.dart";
@@ -13,7 +13,7 @@ class DrawerTitleBarWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = getEnteColorScheme(context);
+    final colors = context.componentColors;
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -22,23 +22,25 @@ class DrawerTitleBarWidget extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            IconButton(
-              visualDensity: const VisualDensity(horizontal: -2, vertical: -2),
-              onPressed: () {
+            IconButtonComponent(
+              tooltip: "Close",
+              variant: IconButtonComponentVariant.unfilled,
+              shouldSurfaceExecutionStates: false,
+              icon: const Icon(Icons.keyboard_double_arrow_left_outlined),
+              onTap: () {
                 scaffoldKey.currentState?.closeDrawer();
               },
-              icon: const Icon(Icons.keyboard_double_arrow_left_outlined),
-              tooltip: "Close",
             ),
-            IconButton(
-              visualDensity: const VisualDensity(horizontal: -2, vertical: -2),
-              onPressed: () => _openSearch(context),
+            IconButtonComponent(
+              variant: IconButtonComponentVariant.unfilled,
+              shouldSurfaceExecutionStates: false,
               icon: HugeIcon(
                 icon: HugeIcons.strokeRoundedSearch01,
-                color: colorScheme.textBase,
+                color: colors.textBase,
                 size: 20,
                 strokeWidth: 1.75,
               ),
+              onTap: () => _openSearch(context),
             ),
           ],
         ),

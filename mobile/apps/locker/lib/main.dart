@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:adaptive_theme/adaptive_theme.dart';
 import 'package:ente_accounts/services/user_service.dart';
+import "package:ente_components/ente_components.dart" as components;
 import 'package:ente_crypto_api/ente_crypto_api.dart';
 import 'package:ente_crypto_dart_adapter/ente_crypto_dart_adapter.dart';
 import "package:ente_legacy/services/emergency_service.dart";
@@ -105,6 +106,7 @@ Future<void> _initSystemTray() async {
 }
 
 Future<void> _runInForeground() async {
+  components.ComponentTheme.configure(app: components.ComponentApp.locker);
   AppThemeConfig.initialize(EnteApp.locker);
   final adaptiveThemeMode = await AdaptiveTheme.getThemeMode();
   final savedThemeMode = _themeMode(adaptiveThemeMode);

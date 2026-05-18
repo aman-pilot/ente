@@ -1,4 +1,4 @@
-import "package:ente_ui/theme/ente_theme.dart";
+import "package:ente_components/ente_components.dart";
 import "package:ente_ui/utils/dialog_util.dart";
 import "package:flutter/material.dart";
 import "package:package_info_plus/package_info_plus.dart";
@@ -22,8 +22,7 @@ class _AppVersionWidgetState extends State<AppVersionWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = getEnteTextTheme(context);
-    final colorScheme = getEnteColorScheme(context);
+    final colors = context.componentColors;
 
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
@@ -57,9 +56,7 @@ class _AppVersionWidgetState extends State<AppVersionWidget> {
               child: Center(
                 child: Text(
                   "Version ${snapshot.data!}",
-                  style: textTheme.mini.copyWith(
-                    color: colorScheme.textMuted,
-                  ),
+                  style: TextStyles.mini.copyWith(color: colors.textLight),
                 ),
               ),
             );

@@ -2,11 +2,7 @@ import "dart:async";
 import "dart:io";
 
 import "package:ente_accounts/services/user_service.dart";
-import "package:ente_ui/components/alert_bottom_sheet.dart";
-import "package:ente_ui/components/buttons/gradient_button.dart";
-import "package:ente_ui/theme/colors.dart";
-import "package:ente_ui/theme/ente_theme.dart";
-import "package:ente_ui/theme/text_style.dart";
+import "package:ente_components/ente_components.dart";
 import "package:flutter/foundation.dart";
 import "package:flutter/material.dart";
 import "package:hugeicons/hugeicons.dart";
@@ -242,99 +238,74 @@ class _SettingsSearchPageState extends State<SettingsSearchPage> {
     if (setting.onTap != null) {
       setting.onTap!();
     } else if (setting.page != null) {
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => setting.page!),
-      );
+      Navigator.of(
+        context,
+      ).push(MaterialPageRoute(builder: (_) => setting.page!));
     }
   }
 
   void _onLogoutTapped() {
-    showAlertBottomSheet(
-      context,
-      title: context.l10n.warning,
-      message: context.l10n.areYouSureYouWantToLogout,
-      assetPath: "assets/warning-grey.png",
-      buttons: [
-        GradientButton(
-          buttonType: GradientButtonType.critical,
-          text: context.l10n.yesLogout,
-          onTap: () async {
-            await UserService.instance.logout(context);
-          },
-        ),
-      ],
+    showBottomSheetComponent<void>(
+      context: context,
+      builder: (sheetContext) => BottomSheetComponent(
+        title: context.l10n.warning,
+        message: context.l10n.areYouSureYouWantToLogout,
+        illustration: Image.asset("assets/warning-grey.png"),
+        actions: [
+          ButtonComponent(
+            label: context.l10n.yesLogout,
+            variant: ButtonComponentVariant.critical,
+            onTap: () async {
+              Navigator.of(sheetContext).pop();
+              await UserService.instance.logout(context);
+            },
+          ),
+        ],
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = getEnteColorScheme(context);
-    final textTheme = getEnteTextTheme(context);
+    final colors = context.componentColors;
     final l10n = context.l10n;
 
     return Scaffold(
-      backgroundColor: colorScheme.backgroundBase,
+      backgroundColor: colors.backgroundBase,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-              child: Container(
-                height: 48,
-                decoration: BoxDecoration(
-                  color: colorScheme.backdropBase,
-                  borderRadius: BorderRadius.circular(16),
+              child: TextInputComponent(
+                controller: _searchController,
+                focusNode: _focusNode,
+                hintText: l10n.searchSettings,
+                onChanged: _onSearchChanged,
+                prefix: HugeIcon(
+                  icon: HugeIcons.strokeRoundedSearch01,
+                  color: colors.textLight,
+                  size: 20,
+                  strokeWidth: 1.75,
                 ),
-                padding: const EdgeInsets.only(left: 8, right: 16),
-                child: Row(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(8),
-                      child: HugeIcon(
-                        icon: HugeIcons.strokeRoundedSearch01,
-                        color: colorScheme.textMuted,
-                        size: 20,
-                        strokeWidth: 1.75,
-                      ),
-                    ),
-                    Expanded(
-                      child: TextField(
-                        controller: _searchController,
-                        focusNode: _focusNode,
-                        onChanged: _onSearchChanged,
-                        style: textTheme.small.copyWith(
-                          color: colorScheme.textBase,
-                        ),
-                        decoration: InputDecoration(
-                          hintText: l10n.searchSettings,
-                          hintStyle: textTheme.small.copyWith(
-                            color: colorScheme.textMuted,
-                          ),
-                          border: InputBorder.none,
-                          contentPadding: EdgeInsets.zero,
-                          isDense: true,
-                        ),
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: () => Navigator.of(context).pop(),
-                      child: HugeIcon(
-                        icon: HugeIcons.strokeRoundedCancel01,
-                        color: colorScheme.textMuted,
-                        size: 20,
-                        strokeWidth: 1.75,
-                      ),
-                    ),
-                  ],
+                suffix: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => Navigator.of(context).pop(),
+                  child: HugeIcon(
+                    icon: HugeIcons.strokeRoundedCancel01,
+                    color: colors.textLight,
+                    size: 20,
+                    strokeWidth: 1.75,
+                  ),
                 ),
               ),
             ),
             const SizedBox(height: 24),
             Expanded(
               child: _searchQuery.isEmpty
-                  ? _buildSuggestions(colorScheme, textTheme, l10n)
-                  : _buildSearchResults(colorScheme, textTheme),
+                  ? _buildSuggestions(l10n)
+                  : _buildSearchResults(),
             ),
           ],
         ),
@@ -342,11 +313,9 @@ class _SettingsSearchPageState extends State<SettingsSearchPage> {
     );
   }
 
-  Widget _buildSuggestions(
-    EnteColorScheme colorScheme,
-    EnteTextTheme textTheme,
-    AppLocalizations l10n,
-  ) {
+  Widget _buildSuggestions(AppLocalizations l10n) {
+    final colors = context.componentColors;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
@@ -354,9 +323,7 @@ class _SettingsSearchPageState extends State<SettingsSearchPage> {
         children: [
           Text(
             l10n.suggestions,
-            style: textTheme.small.copyWith(
-              color: colorScheme.textBase,
-            ),
+            style: TextStyles.body.copyWith(color: colors.textBase),
           ),
           const SizedBox(height: 13),
           Wrap(
@@ -376,17 +343,14 @@ class _SettingsSearchPageState extends State<SettingsSearchPage> {
     );
   }
 
-  Widget _buildSearchResults(
-    EnteColorScheme colorScheme,
-    EnteTextTheme textTheme,
-  ) {
+  Widget _buildSearchResults() {
+    final colors = context.componentColors;
+
     if (_searchResults.isEmpty) {
       return Center(
         child: Text(
           context.l10n.noResultsFound,
-          style: textTheme.small.copyWith(
-            color: colorScheme.textMuted,
-          ),
+          style: TextStyles.body.copyWith(color: colors.textLight),
         ),
       );
     }
@@ -397,46 +361,16 @@ class _SettingsSearchPageState extends State<SettingsSearchPage> {
       separatorBuilder: (context, index) => const SizedBox(height: 8),
       itemBuilder: (context, index) {
         final setting = _searchResults[index];
-        return GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: () => _onSettingTapped(setting),
-          child: Container(
-            height: 56,
-            decoration: BoxDecoration(
-              color: colorScheme.backdropBase,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        setting.title,
-                        style: textTheme.small.copyWith(
-                          color: colorScheme.textBase,
-                        ),
-                      ),
-                      if (setting.title != setting.category)
-                        Text(
-                          setting.category,
-                          style: textTheme.mini.copyWith(
-                            color: colorScheme.textMuted,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                Icon(
-                  Icons.chevron_right,
-                  color: colorScheme.textMuted,
-                ),
-              ],
-            ),
+        return MenuComponent(
+          title: setting.title,
+          subtitle: setting.title != setting.category ? setting.category : null,
+          trailing: HugeIcon(
+            icon: HugeIcons.strokeRoundedArrowRight02,
+            color: colors.textLight,
+            size: 18,
+            strokeWidth: 1.6,
           ),
+          onTap: () => _onSettingTapped(setting),
         );
       },
     );

@@ -1,4 +1,4 @@
-import "package:ente_ui/theme/ente_theme.dart";
+import "package:ente_components/ente_components.dart";
 import "package:flutter/material.dart";
 import "package:hugeicons/hugeicons.dart";
 import "package:url_launcher/url_launcher_string.dart";
@@ -9,7 +9,7 @@ class SocialIconsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = getEnteColorScheme(context);
+    final colors = context.componentColors;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -17,37 +17,37 @@ class SocialIconsRow extends StatelessWidget {
         _SocialIconButton(
           icon: HugeIcons.strokeRoundedDiscord,
           url: "https://ente.com/discord",
-          color: colorScheme.textMuted,
+          color: colors.textLight,
         ),
         const SizedBox(width: 8),
         _SocialIconButton(
           icon: HugeIcons.strokeRoundedYoutube,
           url: "https://www.youtube.com/@entestudio",
-          color: colorScheme.textMuted,
+          color: colors.textLight,
         ),
         const SizedBox(width: 8),
         _SocialIconButton(
           icon: HugeIcons.strokeRoundedGithub,
           url: "https://github.com/ente-io",
-          color: colorScheme.textMuted,
+          color: colors.textLight,
         ),
         const SizedBox(width: 8),
         _SocialIconButton(
           icon: HugeIcons.strokeRoundedNewTwitter,
           url: "https://twitter.com/enteio",
-          color: colorScheme.textMuted,
+          color: colors.textLight,
         ),
         const SizedBox(width: 8),
         _SocialIconButton(
           icon: HugeIcons.strokeRoundedMastodon,
           url: "https://fosstodon.org/@ente",
-          color: colorScheme.textMuted,
+          color: colors.textLight,
         ),
         const SizedBox(width: 8),
         _SocialIconButton(
           icon: HugeIcons.strokeRoundedReddit,
           url: "https://reddit.com/r/enteio",
-          color: colorScheme.textMuted,
+          color: colors.textLight,
         ),
       ],
     );
@@ -67,27 +67,20 @@ class _SocialIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return IconButtonComponent(
+      variant: IconButtonComponentVariant.unfilled,
+      shouldSurfaceExecutionStates: false,
+      icon: HugeIcon(
+        icon: icon,
+        color: color,
+        size: 20,
+      ),
       onTap: () {
         launchUrlString(
           url,
           mode: LaunchMode.externalApplication,
         );
       },
-      child: Container(
-        width: 32,
-        height: 32,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Center(
-          child: HugeIcon(
-            icon: icon,
-            color: color,
-            size: 20,
-          ),
-        ),
-      ),
     );
   }
 }

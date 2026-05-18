@@ -28,6 +28,7 @@ class MenuComponent extends StatefulWidget {
     this.trailing,
     this.selected = false,
     this.onTap,
+    this.onDoubleTap,
     this.isDisabled = false,
     this.showOnlyLoadingState = false,
     this.shouldSurfaceExecutionStates = false,
@@ -44,6 +45,7 @@ class MenuComponent extends StatefulWidget {
   final Widget? trailing;
   final bool selected;
   final FutureOr<void> Function()? onTap;
+  final FutureOr<void> Function()? onDoubleTap;
   final bool isDisabled;
   final bool showOnlyLoadingState;
   final bool shouldSurfaceExecutionStates;
@@ -84,6 +86,7 @@ class _MenuComponentState extends State<MenuComponent> {
           onExit: enabled ? (_) => _setHovered(false) : null,
           child: InkWell(
             onTap: enabled ? _handleTap : null,
+            onDoubleTap: enabled ? _handleDoubleTap : null,
             onHighlightChanged: enabled ? _setPressed : null,
             borderRadius: borderRadius,
             child: AnimatedContainer(
@@ -194,7 +197,9 @@ class _MenuComponentState extends State<MenuComponent> {
   }
 
   bool get _canHandleGestures {
-    return !widget.isDisabled && widget.onTap != null && !_isBusy;
+    return !widget.isDisabled &&
+        (widget.onTap != null || widget.onDoubleTap != null) &&
+        !_isBusy;
   }
 
   bool get _isBusy => _executionState == ComponentExecutionState.inProgress;
@@ -332,6 +337,18 @@ class _MenuComponentState extends State<MenuComponent> {
       if (mounted) {
         _resetExecutionState();
       }
+    }
+  }
+
+  Future<void> _handleDoubleTap() async {
+    if (!_canHandleGestures || widget.onDoubleTap == null) {
+      return;
+    }
+
+    try {
+      await widget.onDoubleTap?.call();
+    } catch (_) {
+      // Match tap handling: callers that need explicit UI should surface it.
     }
   }
 

@@ -222,7 +222,8 @@ Future<T?> showBottomSheetComponent<T>({
     enableDrag: enableDrag,
     backgroundColor: Colors.transparent,
     barrierColor: barrierColor ?? colors.specialScrim.withValues(alpha: 0.55),
-    builder: builder,
+    builder: (context) =>
+        PopScope(canPop: isDismissible, child: builder(context)),
   );
 }
 

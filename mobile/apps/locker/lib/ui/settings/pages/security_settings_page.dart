@@ -5,21 +5,18 @@ import "package:ente_accounts/pages/request_pwd_verification_page.dart";
 import "package:ente_accounts/pages/sessions_page.dart";
 import "package:ente_accounts/services/passkey_service.dart";
 import "package:ente_accounts/services/user_service.dart";
+import "package:ente_components/ente_components.dart";
 import "package:ente_crypto_api/ente_crypto_api.dart";
 import "package:ente_lock_screen/local_authentication_service.dart";
 import "package:ente_lock_screen/lock_screen_settings.dart";
 import "package:ente_lock_screen/ui/lock_screen_options.dart";
-import "package:ente_ui/components/alert_bottom_sheet.dart";
-import "package:ente_ui/components/title_bar_title_widget.dart";
-import "package:ente_ui/components/toggle_switch_widget.dart";
-import "package:ente_ui/theme/ente_theme.dart";
-import "package:ente_ui/utils/dialog_util.dart";
 import "package:ente_utils/email_util.dart";
 import "package:flutter/material.dart";
 import "package:locker/l10n/l10n.dart";
 import "package:locker/services/configuration.dart";
-import "package:locker/ui/components/gradient_button.dart";
-import "package:locker/ui/settings/widgets/settings_widget.dart";
+import "package:locker/ui/settings/settings_error_sheet.dart";
+import "package:locker/ui/settings/widgets/settings_app_bar.dart";
+import "package:locker/ui/settings/widgets/settings_item.dart";
 import "package:logging/logging.dart";
 
 class SecuritySettingsPage extends StatefulWidget {
@@ -43,43 +40,22 @@ class _SecuritySettingsPageState extends State<SecuritySettingsPage> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final colorScheme = getEnteColorScheme(context);
 
-    return Scaffold(
-      backgroundColor: colorScheme.backgroundBase,
-      appBar: AppBar(
-        backgroundColor: colorScheme.backgroundBase,
-        surfaceTintColor: Colors.transparent,
-        toolbarHeight: 48,
-        leadingWidth: 48,
-        leading: GestureDetector(
-          onTap: () => Navigator.pop(context),
-          child: const Icon(Icons.arrow_back_outlined),
-        ),
-      ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TitleBarTitleWidget(title: l10n.security),
-              const SizedBox(height: 24),
-              if (_hasLoggedIn) ...[
-                _buildEmailVerificationItem(context),
-                const SizedBox(height: 12),
-                _buildPasskeyItem(context),
-                const SizedBox(height: 12),
-              ],
-              _buildAppLockItem(context),
-              if (_hasLoggedIn) ...[
-                const SizedBox(height: 12),
-                _buildActiveSessionsItem(context),
-              ],
-            ],
-          ),
-        ),
-      ),
+    return SettingsPageScaffold(
+      title: l10n.security,
+      children: [
+        if (_hasLoggedIn) ...[
+          _buildEmailVerificationItem(context),
+          const SizedBox(height: 12),
+          _buildPasskeyItem(context),
+          const SizedBox(height: 12),
+        ],
+        _buildAppLockItem(context),
+        if (_hasLoggedIn) ...[
+          const SizedBox(height: 12),
+          _buildActiveSessionsItem(context),
+        ],
+      ],
     );
   }
 
@@ -89,7 +65,7 @@ class _SecuritySettingsPageState extends State<SecuritySettingsPage> {
     return SettingsItem(
       title: l10n.emailVerificationToggle,
       showChevron: false,
-      trailing: ToggleSwitchWidget(
+      trailing: ToggleSwitchComponent.async(
         value: () => UserService.instance.hasEmailMFAEnabled(),
         onChanged: () => _onEmailMFAToggle(context),
       ),
@@ -166,19 +142,21 @@ class _SecuritySettingsPageState extends State<SecuritySettingsPage> {
         );
       }
     } else {
-      await showAlertBottomSheet(
-        context,
-        title: l10n.noSystemLockFound,
-        message: l10n.toEnableAppLockPleaseSetupDevicePasscodeOrScreen,
-        assetPath: "assets/warning-grey.png",
-        buttons: [
-          GradientButton(
-            text: context.l10n.contactSupport,
-            onTap: () async {
-              await sendLogs(context, "support@ente.com", postShare: () {});
-            },
-          ),
-        ],
+      await showBottomSheetComponent<void>(
+        context: context,
+        builder: (context) => BottomSheetComponent(
+          title: l10n.noSystemLockFound,
+          message: l10n.toEnableAppLockPleaseSetupDevicePasscodeOrScreen,
+          illustration: Image.asset("assets/warning-grey.png"),
+          actions: [
+            ButtonComponent(
+              label: context.l10n.contactSupport,
+              onTap: () async {
+                await sendLogs(context, "support@ente.com", postShare: () {});
+              },
+            ),
+          ],
+        ),
       );
     }
   }
@@ -200,10 +178,7 @@ class _SecuritySettingsPageState extends State<SecuritySettingsPage> {
         final Uint8List recoveryKey = Configuration.instance.getRecoveryKey();
         final resetKey = CryptoUtil.generateKey();
         final resetKeyBase64 = CryptoUtil.bin2base64(resetKey);
-        final encryptionResult = CryptoUtil.encryptSync(
-          resetKey,
-          recoveryKey,
-        );
+        final encryptionResult = CryptoUtil.encryptSync(resetKey, recoveryKey);
         await PasskeyService.instance.configurePasskeyRecovery(
           resetKeyBase64,
           CryptoUtil.bin2base64(encryptionResult.encryptedData!),
@@ -213,17 +188,15 @@ class _SecuritySettingsPageState extends State<SecuritySettingsPage> {
       await PasskeyService.instance.openPasskeyPage(buildContext);
     } catch (e, s) {
       _logger.severe("failed to open passkey page", e, s);
-      await showGenericErrorBottomSheet(
-        context: context,
-        error: e,
-      );
+      await showSettingsErrorBottomSheet(context: context, error: e);
     }
   }
 
   Future<void> _updateEmailMFA(bool isEnabled) async {
     try {
-      final UserDetails details =
-          await UserService.instance.getUserDetailsV2(memoryCount: false);
+      final UserDetails details = await UserService.instance.getUserDetailsV2(
+        memoryCount: false,
+      );
       if ((details.profileData?.canDisableEmailMFA ?? false) == false) {
         final result = await Navigator.of(context).push<bool>(
           MaterialPageRoute(
@@ -231,8 +204,9 @@ class _SecuritySettingsPageState extends State<SecuritySettingsPage> {
               return RequestPasswordVerificationPage(
                 Configuration.instance,
                 onPasswordVerified: (Uint8List keyEncryptionKey) async {
-                  final Uint8List loginKey =
-                      await CryptoUtil.deriveLoginKey(keyEncryptionKey);
+                  final Uint8List loginKey = await CryptoUtil.deriveLoginKey(
+                    keyEncryptionKey,
+                  );
                   await UserService.instance.registerOrUpdateSrp(loginKey);
                 },
               );
@@ -245,10 +219,7 @@ class _SecuritySettingsPageState extends State<SecuritySettingsPage> {
       }
       await UserService.instance.updateEmailMFA(isEnabled);
     } catch (e) {
-      await showGenericErrorBottomSheet(
-        context: context,
-        error: e,
-      );
+      await showSettingsErrorBottomSheet(context: context, error: e);
     }
   }
 }

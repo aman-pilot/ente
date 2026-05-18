@@ -18,7 +18,7 @@ class ComponentsCatalogApp extends StatefulWidget {
 
 class _ComponentsCatalogAppState extends State<ComponentsCatalogApp> {
   ThemeMode _themeMode = ThemeMode.light;
-  EnteApp _appTheme = EnteApp.photos;
+  ComponentApp _appTheme = ComponentApp.photos;
   Duration? _lastPointerUpAt;
   Offset? _lastPointerUpPosition;
 
@@ -64,9 +64,9 @@ class _ComponentsCatalogAppState extends State<ComponentsCatalogApp> {
 
   void _cycleAppTheme() {
     final nextTheme = switch (_appTheme) {
-      EnteApp.photos => EnteApp.locker,
-      EnteApp.locker => EnteApp.auth,
-      EnteApp.auth => EnteApp.photos,
+      ComponentApp.photos => ComponentApp.locker,
+      ComponentApp.locker => ComponentApp.auth,
+      ComponentApp.auth => ComponentApp.photos,
     };
     setState(() => _appTheme = nextTheme);
   }
