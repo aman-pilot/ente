@@ -1,17 +1,16 @@
 import "package:collection/collection.dart";
+import "package:ente_components/ente_components.dart";
 import "package:ente_pure_utils/ente_pure_utils.dart";
 import "package:flutter/material.dart";
 import "package:logging/logging.dart";
 import "package:photos/core/configuration.dart";
+import "package:photos/emergency/components/email_action_sheet.dart";
 import "package:photos/emergency/emergency_service.dart";
 import "package:photos/emergency/model.dart";
 import "package:photos/emergency/recover_others_account.dart";
 import "package:photos/gateways/users/models/key_attributes.dart";
 import "package:photos/l10n/l10n.dart";
-import "package:photos/theme/ente_theme.dart";
-import "package:photos/ui/components/alert_bottom_sheet.dart";
-import "package:photos/ui/components/buttons/button_widget_v2.dart";
-import "package:photos/ui/components/title_bar_title_widget.dart";
+import "package:photos/ui/settings/components/settings_page_scaffold.dart";
 import "package:photos/utils/dialog_util.dart";
 
 // OtherContactPage is used to start recovery process for other user's account
@@ -69,192 +68,155 @@ class _OtherContactPageState extends State<OtherContactPage> {
       );
       waitTill = getFormattedTime(dateTime, context: context);
     }
-    final colorScheme = getEnteColorScheme(context);
-    final textTheme = getEnteTextTheme(context);
-    return Scaffold(
-      appBar: AppBar(
-        toolbarHeight: 48,
-        leadingWidth: 48,
-        backgroundColor: colorScheme.backgroundColour,
-        leading: GestureDetector(
-          onTap: () {
-            Navigator.pop(context);
-          },
-          child: const Icon(Icons.arrow_back_outlined),
-        ),
-      ),
-      backgroundColor: colorScheme.backgroundColour,
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TitleBarTitleWidget(title: context.l10n.recoverAccount),
-            Text(accountEmail, style: textTheme.smallMuted),
-            const SizedBox(height: 12),
-            if (recoverySession == null)
-              Text(
-                context.l10n.recoverAccountDesc(
-                  email: accountEmail,
-                  days: widget.contact.recoveryNoticeInDays,
-                ),
-                style: textTheme.smallMuted,
-              ),
-            if (recoverySession != null && recoverySession!.status == "READY")
-              Text(
-                context.l10n.recoveryReady(email: accountEmail),
-                style: textTheme.smallMuted,
-              ),
-            if (recoverySession != null && recoverySession!.status == "WAITING")
-              Text(
-                context.l10n.recoverAccountAfter(
-                  email: accountEmail,
-                  time: waitTill!,
-                ),
-                style: textTheme.smallMuted,
-              ),
-            const SizedBox(height: 24),
-            if (recoverySession == null)
-              ButtonWidgetV2(
-                buttonType: ButtonTypeV2.primary,
-                labelText: context.l10n.startRecovery,
-                isDisabled: widget.contact.isPendingInvite(),
-                shouldSurfaceExecutionStates: false,
-                onTap: widget.contact.isPendingInvite()
-                    ? null
-                    : () async {
-                        final confirmed = await showAlertBottomSheet<bool>(
-                          context,
-                          title: context.l10n.startRecovery,
-                          message: context.l10n.startRecoveryDesc(
-                            email: accountEmail,
-                          ),
-                          assetPath: "assets/warning-grey.png",
-                          buttons: [
-                            ButtonWidgetV2(
-                              buttonType: ButtonTypeV2.primary,
-                              labelText: context.l10n.startRecovery,
-                              onTap: () async =>
-                                  Navigator.of(context).pop(true),
-                              shouldSurfaceExecutionStates: false,
-                            ),
-                          ],
-                        );
-                        if (confirmed != true) {
-                          return;
-                        }
-                        try {
-                          await EmergencyContactService.instance.startRecovery(
-                            widget.contact,
-                          );
-                          if (mounted) {
-                            _fetchData().ignore();
-                            if (!context.mounted) return;
-                            await showAlertBottomSheet(
-                              context,
-                              title: context.l10n.recoveryInitiated,
-                              message: context.l10n.recoveryInitiatedDesc(
-                                days: widget.contact.recoveryNoticeInDays,
-                                email: Configuration.instance.getEmail()!,
-                              ),
-                              assetPath: "assets/warning-grey.png",
-                            );
-                          }
-                        } catch (e) {
-                          if (!context.mounted) return;
-                          showGenericErrorBottomSheet(
-                            context: context,
-                            error: e,
-                          ).ignore();
-                        }
-                      },
-              ),
-            if (recoverySession != null && recoverySession!.status == "READY")
-              ButtonWidgetV2(
-                buttonType: ButtonTypeV2.primary,
-                labelText: context.l10n.recoverAccount,
-                shouldSurfaceExecutionStates: false,
-                onTap: () async {
-                  try {
-                    final (
-                      String key,
-                      KeyAttributes attributes,
-                    ) = await EmergencyContactService.instance.getRecoveryInfo(
-                      recoverySession!,
-                    );
-                    routeToPage(
-                      context,
-                      RecoverOthersAccount(key, attributes, recoverySession!),
-                    ).ignore();
-                  } catch (e) {
-                    showGenericErrorBottomSheet(
-                      context: context,
-                      error: e,
-                    ).ignore();
-                  }
-                },
-              ),
-            if (recoverySession != null && recoverySession!.status == "WAITING")
-              ButtonWidgetV2(
-                buttonType: ButtonTypeV2.secondary,
-                labelText: context.l10n.cancelRecovery,
-                shouldSurfaceExecutionStates: false,
-                onTap: () async {
-                  await _showCancelRecoverySheet();
-                },
-              ),
-            if (recoverySession != null &&
-                recoverySession!.status == "READY") ...[
-              const SizedBox(height: 20),
-              ButtonWidgetV2(
-                buttonType: ButtonTypeV2.tertiaryCritical,
-                labelText: context.l10n.cancelRecovery,
-                shouldSurfaceExecutionStates: false,
-                onTap: () async {
-                  await _showCancelRecoverySheet();
-                },
-              ),
-              const SizedBox(height: 24),
-              Text(
-                context.l10n.orRemoveYourself(email: accountEmail),
-                style: textTheme.smallMuted,
-              ),
-              const SizedBox(height: 12),
-              ButtonWidgetV2(
-                buttonType: ButtonTypeV2.tertiaryCritical,
-                labelText: context.l10n.removeContact,
-                shouldSurfaceExecutionStates: false,
-                onTap: showRemoveSheet,
-              ),
-            ],
-            if (recoverySession == null ||
-                recoverySession!.status != "READY") ...[
-              const SizedBox(height: 20),
-              ButtonWidgetV2(
-                buttonType: ButtonTypeV2.tertiaryCritical,
-                labelText: context.l10n.removeContact,
-                shouldSurfaceExecutionStates: false,
-                onTap: showRemoveSheet,
-              ),
-            ],
-          ],
-        ),
-      ),
+    final colors = context.componentColors;
+    return SettingsPageScaffold(
+      title: context.l10n.recoverAccount,
+      subtitle: accountEmail,
+      children: [
+        if (recoverySession == null)
+          Text(
+            context.l10n.recoverAccountDesc(
+              email: accountEmail,
+              days: widget.contact.recoveryNoticeInDays,
+            ),
+            style: TextStyles.body.copyWith(color: colors.textLight),
+          ),
+        if (recoverySession != null && recoverySession!.status == "READY")
+          Text(
+            context.l10n.recoveryReady(email: accountEmail),
+            style: TextStyles.body.copyWith(color: colors.textLight),
+          ),
+        if (recoverySession != null && recoverySession!.status == "WAITING")
+          Text(
+            context.l10n.recoverAccountAfter(
+              email: accountEmail,
+              time: waitTill!,
+            ),
+            style: TextStyles.body.copyWith(color: colors.textLight),
+          ),
+        const SizedBox(height: Spacing.xxl),
+        if (recoverySession == null)
+          ButtonComponent(
+            label: context.l10n.startRecovery,
+            isDisabled: widget.contact.isPendingInvite(),
+            shouldShowSuccessState: false,
+            onTap: widget.contact.isPendingInvite() ? null : _startRecovery,
+          ),
+        if (recoverySession != null && recoverySession!.status == "READY")
+          ButtonComponent(
+            label: context.l10n.recoverAccount,
+            shouldShowSuccessState: false,
+            onTap: _recoverAccount,
+          ),
+        if (recoverySession != null && recoverySession!.status == "WAITING")
+          ButtonComponent(
+            variant: ButtonComponentVariant.secondary,
+            label: context.l10n.cancelRecovery,
+            shouldShowSuccessState: false,
+            onTap: _showCancelRecoverySheet,
+          ),
+        if (recoverySession != null && recoverySession!.status == "READY") ...[
+          const SizedBox(height: Spacing.xl),
+          ButtonComponent(
+            variant: ButtonComponentVariant.tertiaryCritical,
+            label: context.l10n.cancelRecovery,
+            shouldShowSuccessState: false,
+            onTap: _showCancelRecoverySheet,
+          ),
+          const SizedBox(height: Spacing.xxl),
+          Text(
+            context.l10n.orRemoveYourself(email: accountEmail),
+            style: TextStyles.body.copyWith(color: colors.textLight),
+          ),
+          const SizedBox(height: Spacing.md),
+          ButtonComponent(
+            variant: ButtonComponentVariant.tertiaryCritical,
+            label: context.l10n.removeContact,
+            shouldShowSuccessState: false,
+            onTap: showRemoveSheet,
+          ),
+        ],
+        if (recoverySession == null || recoverySession!.status != "READY") ...[
+          const SizedBox(height: Spacing.xl),
+          ButtonComponent(
+            variant: ButtonComponentVariant.tertiaryCritical,
+            label: context.l10n.removeContact,
+            shouldShowSuccessState: false,
+            onTap: showRemoveSheet,
+          ),
+        ],
+      ],
     );
   }
 
+  Future<void> _startRecovery() async {
+    final confirmed = await showRecoveryAlertSheet<bool>(
+      context,
+      title: context.l10n.startRecovery,
+      message: context.l10n.startRecoveryDesc(email: accountEmail),
+      actions: [
+        ButtonComponent(
+          label: context.l10n.startRecovery,
+          onTap: () async => Navigator.of(context).pop(true),
+          shouldShowSuccessState: false,
+        ),
+      ],
+    );
+    if (confirmed != true) {
+      return;
+    }
+    try {
+      await EmergencyContactService.instance.startRecovery(widget.contact);
+      if (!mounted) return;
+      await _fetchData();
+      if (!mounted) return;
+      await showRecoveryAlertSheet(
+        context,
+        title: context.l10n.recoveryInitiated,
+        message: context.l10n.recoveryInitiatedDesc(
+          days: widget.contact.recoveryNoticeInDays,
+          email: Configuration.instance.getEmail()!,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      await showGenericErrorBottomSheet(context: context, error: e);
+    }
+  }
+
+  Future<void> _recoverAccount() async {
+    try {
+      final (
+        String key,
+        KeyAttributes attributes,
+      ) = await EmergencyContactService.instance.getRecoveryInfo(
+        recoverySession!,
+      );
+      if (!mounted) return;
+      await routeToPage(
+        context,
+        RecoverOthersAccount(key, attributes, recoverySession!),
+      );
+      if (mounted) {
+        await _fetchData();
+      }
+    } catch (e) {
+      if (!mounted) return;
+      await showGenericErrorBottomSheet(context: context, error: e);
+    }
+  }
+
   Future<void> _showCancelRecoverySheet() async {
-    final confirmed = await showAlertBottomSheet<bool>(
+    final confirmed = await showRecoveryAlertSheet<bool>(
       context,
       title: context.l10n.cancelRecovery,
       message: context.l10n.cancelRecoveryDesc(email: accountEmail),
-      assetPath: "assets/warning-grey.png",
-      buttons: [
-        ButtonWidgetV2(
-          buttonType: ButtonTypeV2.critical,
-          labelText: context.l10n.cancelRecovery,
+      actions: [
+        ButtonComponent(
+          variant: ButtonComponentVariant.critical,
+          label: context.l10n.cancelRecovery,
           onTap: () async => Navigator.of(context).pop(true),
-          shouldSurfaceExecutionStates: false,
+          shouldShowSuccessState: false,
         ),
       ],
     );
@@ -262,27 +224,28 @@ class _OtherContactPageState extends State<OtherContactPage> {
       try {
         await EmergencyContactService.instance.stopRecovery(recoverySession!);
         if (mounted) {
-          _fetchData().ignore();
+          recoverySession = null;
+          setState(() {});
+          await _fetchData();
         }
       } catch (e) {
         if (!mounted) return;
-        showGenericErrorBottomSheet(context: context, error: e).ignore();
+        await showGenericErrorBottomSheet(context: context, error: e);
       }
     }
   }
 
   Future<void> showRemoveSheet() async {
-    final confirmed = await showAlertBottomSheet<bool>(
+    final confirmed = await showRecoveryAlertSheet<bool>(
       context,
       title: context.l10n.removeContact,
       message: context.l10n.removeYourselfDesc(email: accountEmail),
-      assetPath: "assets/warning-grey.png",
-      buttons: [
-        ButtonWidgetV2(
-          buttonType: ButtonTypeV2.critical,
-          labelText: context.l10n.removeContact,
+      actions: [
+        ButtonComponent(
+          variant: ButtonComponentVariant.critical,
+          label: context.l10n.removeContact,
           onTap: () async => Navigator.of(context).pop(true),
-          shouldSurfaceExecutionStates: false,
+          shouldShowSuccessState: false,
         ),
       ],
     );
@@ -297,7 +260,7 @@ class _OtherContactPageState extends State<OtherContactPage> {
         }
       } catch (e) {
         if (!mounted) return;
-        showGenericErrorBottomSheet(context: context, error: e).ignore();
+        await showGenericErrorBottomSheet(context: context, error: e);
       }
     }
   }
